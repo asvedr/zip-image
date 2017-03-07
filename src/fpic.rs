@@ -165,7 +165,7 @@ fn zip_rec<Px : DPix>(img : &ImageBuffer<Px,Vec<u8>>, zipped : &mut Vec<Rect>, n
     }
 }
 
-impl<Px : DPix> ZImage<Px> {
+impl<Px : DPix + Eq> ZImage<Px> {
     pub fn where_neq(&self, other : &ZImage<Px>) -> Option<String> {
         macro_rules! ans{($a:expr) => {return Some(format!("{}",$a))};}
         if self.width != other.width {
@@ -198,7 +198,7 @@ impl<Px : DPix> ZImage<Px> {
             if a.bigs.len() != b.bigs.len() {
                 ans!(format!("sch x small {}", i))
             }
-            for j in a.bigs.len() {
+            for j in 0 .. a.bigs.len() {
                 //let a = &a.bigs[i];
                 //let b = &b.bigs[i];
                 if a.bigs[i] != b.bigs[i] {
@@ -215,7 +215,7 @@ impl<Px : DPix> ZImage<Px> {
                     ans!(format!("pix y {}", i))
                 }
                 if a.rgb != b.rgb {
-                    ans!(format!("pix val {}", i))
+                    ans!(format!("pix val {} (len: {})", i, self.pixels.len()))
                 }
             }
         }
