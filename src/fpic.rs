@@ -166,6 +166,61 @@ fn zip_rec<Px : DPix>(img : &ImageBuffer<Px,Vec<u8>>, zipped : &mut Vec<Rect>, n
 }
 
 impl<Px : DPix> ZImage<Px> {
+    pub fn where_neq(&self, other : &ZImage<Px>) -> Option<String> {
+        macro_rules! ans{($a:expr) => {return Some(format!("{}",$a))};}
+        if self.width != other.width {
+            ans!("width")
+        }
+        if self.height != other.height {
+            ans!("height")
+        }
+        if self.schemas.len() != other.schemas.len() {
+            ans!("sch len")
+        }
+        if self.pixels.len() != other.pixels.len() {
+            ans!("pix len")
+        }
+        for i in 0 .. self.schemas.len() {
+            let a = &self.schemas[i];
+            let b = &other.schemas[i];
+            if a.small_x != b.small_x {
+                ans!(format!("sch x small {}", i))
+            }
+            if a.small_y != b.small_y {
+                ans!(format!("sch x small {}", i))
+            }
+            if a.small_wh != b.small_wh {
+                ans!(format!("sch x small {}", i))
+            }
+            if a.big_wh != b.big_wh {
+                ans!(format!("sch x small {}", i))
+            }
+            if a.bigs.len() != b.bigs.len() {
+                ans!(format!("sch x small {}", i))
+            }
+            for j in a.bigs.len() {
+                //let a = &a.bigs[i];
+                //let b = &b.bigs[i];
+                if a.bigs[i] != b.bigs[i] {
+                    ans!(format!("sch bigs {} of {}", j, i))
+                }
+            }
+            for i in 0 .. self.pixels.len() {
+                let a = &self.pixels[i];
+                let b = &other.pixels[i];
+                if a.x != b.x {
+                    ans!(format!("pix x {}", i))
+                }
+                if a.y != b.y {
+                    ans!(format!("pix y {}", i))
+                }
+                if a.rgb != b.rgb {
+                    ans!(format!("pix val {}", i))
+                }
+            }
+        }
+        None
+    }
     pub fn zip(img : &ImageBuffer<Px,Vec<u8>>) -> ZImage<Px> {
         let mut sch = vec![];
         let mut zpd = vec![];
@@ -237,7 +292,7 @@ impl<Px : DPix> ZImage<Px> {
         println!("{} / {}", pin, pout);
         img
     }
-/*    pub fn save(&self, name : &str) -> Result<()> {
+    pub fn save(&self, name : &str) -> Result<()> {
         let mut wrt = BufWriter::new(File::create(name)?);
         write_sz(self.width, &mut wrt)?;
         write_sz(self.height, &mut wrt)?;
@@ -247,9 +302,16 @@ impl<Px : DPix> ZImage<Px> {
             write_sz(s.small_x, &mut wrt)?;
             write_sz(s.small_y, &mut wrt)?;
             write_sz(s.small_wh, &mut wrt)?;
-            write_sz(s.big_x, &mut wrt)?;
-            write_sz(s.big_y, &mut wrt)?;
             write_sz(s.big_wh, &mut wrt)?;
+            write_sz(s.bigs.len() as Sz, &mut wrt)?;
+            for b in s.bigs.iter() {
+                match *b {
+                    (ref x, ref y) => {
+                        write_sz(*x, &mut wrt)?;
+                        write_sz(*y, &mut wrt)?;
+                    }
+                }
+            }
         }
         for p in self.pixels.iter() {
             write_sz(p.x, &mut wrt)?;
@@ -272,21 +334,24 @@ impl<Px : DPix> ZImage<Px> {
         let pxcnt = read_sz(&mut rdr)?;
         slf.schemas.reserve(schcnt as usize);
         for _ in 0 .. schcnt {
-            let mut sch = Schema {
-                small_x  : 0,
-                small_y  : 0,
-                small_wh : 0,
-                big_x    : 0,
-                big_y    : 0,
-                big_wh   : 0
-            };
-            sch.small_x  = read_sz(&mut rdr)?;
-            sch.small_y  = read_sz(&mut rdr)?;
-            sch.small_wh = read_sz(&mut rdr)?;
-            sch.big_x    = read_sz(&mut rdr)?;
-            sch.big_y    = read_sz(&mut rdr)?;
-            sch.big_wh   = read_sz(&mut rdr)?;
-            slf.schemas.push(sch);
+            let small_x  = read_sz(&mut rdr)?;
+            let small_y  = read_sz(&mut rdr)?;
+            let small_wh = read_sz(&mut rdr)?;
+            let big_wh   = read_sz(&mut rdr)?;
+            let blen     = read_sz(&mut rdr)?;
+            let mut bigs = Vec::new();
+            for _ in 0 .. blen {
+                let x = read_sz(&mut rdr)?;
+                let y = read_sz(&mut rdr)?;
+                bigs.push((x,y));
+            }
+            slf.schemas.push(Schema{
+                small_x  : small_x,
+                small_y  : small_y,
+                small_wh : small_wh,
+                big_wh   : big_wh,
+                bigs     : bigs
+            });
         }
         for _ in 0 .. pxcnt {
             let x = read_sz(&mut rdr)?;
@@ -300,5 +365,4 @@ impl<Px : DPix> ZImage<Px> {
         }
         Ok(slf)
     }
-    */
 }

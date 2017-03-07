@@ -37,10 +37,30 @@ fn main() {
     let buf = BufReader::new(File::open(&*args[1]).unwrap());
     macro_rules! test {($img:expr) => {{
         let zpd = ZImage::zip(&$img);
-        let img = zpd.unzip();
-        match img.save("out.png") {
+        let tfile = "__tfile__";
+        match zpd.save(tfile) {
             Ok(_) => (),
-            Err(e) => println!("save err {:?}", e)
+            Err(e) => {
+                println!("save t error: {:?}", e);
+                return;
+            }
+        }
+        println!("saved!");
+        let zip = ZImage::load(tfile);
+        match zip {
+            Ok(zimg) => {
+                println!("loaded");
+                println!("neq {:?}", zimg.where_neq(&zpd));
+                let img = zimg.unzip();
+                match img.save("out.png") {
+                    Ok(_) => (),
+                    Err(e) => println!("save err {:?}", e)
+                }
+            },
+            Err(e) => {
+                println!("load t error: {:?}", e);
+                return;
+            }
         }
     }};}
     match image::load(buf, image::ImageFormat::PNG) {
